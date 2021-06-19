@@ -66,7 +66,7 @@ namespace MediaFireDownloader
                         file["filename"].Get<string>(),
                         file["size"].Get<ulong>()
                     );
-                    entry.Destination = Destination + "\\" + Name;
+                    entry.Destination = Destination + "/" + Name;
                     entries.Add(entry);
                 }
 
@@ -106,7 +106,7 @@ namespace MediaFireDownloader
                         file["name"].Get<string>()
                     );
                     entry.IsRoot = false;
-                    entry.Destination = Destination + "\\" + Name;
+                    entry.Destination = Destination + "/" + Name;
                     entries.Add(entry);
                 }
 

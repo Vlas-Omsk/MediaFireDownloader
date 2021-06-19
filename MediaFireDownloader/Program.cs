@@ -63,7 +63,7 @@ namespace MediaFireDownloader
         {
             foreach (var file in entry.GetFiles())
             {
-                WriteLine("add", file.Destination + "\\" + file.Name);
+                WriteLine("add", file.Destination + "/" + file.Name);
                 collection.Add(file);
             }
 
@@ -78,7 +78,7 @@ namespace MediaFireDownloader
             var wc = new WebClient();
             if (!Directory.Exists(entry.Destination))
                 Directory.CreateDirectory(entry.Destination);
-            var fileName = entry.Destination + "\\" + entry.Name;
+            var fileName = entry.Destination + "/" + entry.Name;
 
             if (File.Exists(fileName))
             {
