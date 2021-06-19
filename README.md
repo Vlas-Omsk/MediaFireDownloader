@@ -20,7 +20,7 @@ https://www.mediafire.com/folder/r6v733dba1h82/NewFolder
 ```
 The folder with key `r6v733dba1h82` and all files will be downloaded to the C:/Downloads
 ```
-MediaFireDownloader r6v733dba1h82 С:/Downloads
+MediaFireDownloader r6v733dba1h82 C:/Downloads
 ```
 or to the current folder if destination path is not specified
 ```
