@@ -122,9 +122,11 @@ namespace MediaFireDownloader
                 wc.DownloadProgressChanged += (s, e) => DownloadProgressChangedHandler(e.ProgressPercentage, (ulong)e.BytesReceived);
                 wc.DownloadFileCompleted += (s, e) =>
                 {
-                    downloaded++;
                     if (!e.Cancelled)
+                    {
                         DownloadProgressChangedHandler(100, entry.Size);
+                        downloaded++;
+                    }
                     else
                     {
                         Console.Write(" Error!");
@@ -132,9 +134,9 @@ namespace MediaFireDownloader
                     }
 
                     Console.WriteLine();
+                    wc.Dispose();
                     if (onCompleated != null)
                         onCompleated();
-                    wc.Dispose();
                 };
                 wc.DownloadFileAsync(new Uri(downloadLink), fileName);
             } catch
