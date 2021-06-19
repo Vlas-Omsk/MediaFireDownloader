@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\GitBuh\PinkJson\PinkJson\PinkJson.csproj" />
+    <ProjectReference Include="..\..\PinkJson\PinkJson\PinkJson.csproj" />
   </ItemGroup>
 
 </Project>
