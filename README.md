@@ -12,6 +12,7 @@ MediaFireDownloader is a simple console client for downloading a folder and all 
 MediaFireDownloader <folder key> [destination path]
 ```
 
+<!--DontShowOnWebsite #begin-->
 #### Example
 ```
                                   folder key
@@ -26,3 +27,4 @@ or to the current folder if destination path is not specified
 ```
 MediaFireDownloader r6v733dba1h82
 ```
+<!--DontShowOnWebsite #end-->
