@@ -16,7 +16,7 @@ MediaFireDownloader <folder key> [destination path]
 #### Example
 ```
                                   folder key
-                                 ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
+                                 ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
 https://www.mediafire.com/folder/rww7bhhi0yc1l/NewFolder
 ```
 The folder with key `rww7bhhi0yc1l` and all files will be downloaded to the C:/Downloads
