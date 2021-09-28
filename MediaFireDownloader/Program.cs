@@ -32,16 +32,40 @@ namespace MediaFireDownloader
                     break;
             }
 
-            WriteLine("inf", "File info:");
-            Console.WriteLine("  Name: " + root.Name);
-            Console.WriteLine("  Destination: " + root.Destination);
-            WriteLine("inf", "Press Enter for exit");
-            WriteLine("inf", "Indexing...");
-            files = new List<FileEntry>();
-            GetFiles(root, in files);
+            WriteLine("inf", "Press Enter to exit while the program is running");
 
-            WriteLine("inf", "Downloading...");
-            DownloadFile(files[idx], DownloadLoop);
+            bool haveErrors = false;
+            try
+            {
+                root.SetInfoFromServer();
+            }
+            catch (WebException ex)
+            {
+                var httpWebResponse = (HttpWebResponse)ex.Response;
+                if (httpWebResponse.StatusCode == HttpStatusCode.NotFound)
+                    WriteLine("inf", "Folder not found");
+                else
+                    WriteLine("inf", $"Unknown error(Status code: {(int)httpWebResponse.StatusCode} {httpWebResponse.StatusCode}): " + ex.ToString());
+                haveErrors = true;
+            }
+
+            if (!haveErrors)
+            {
+                WriteLine("inf", "File info:");
+                Console.WriteLine("  Name: " + root.Name);
+                Console.WriteLine("  Destination: " + root.Destination);
+                WriteLine("inf", "Indexing...");
+                files = new List<FileEntry>();
+                GetFiles(root, in files);
+
+                if (files.Count == 0)
+                    WriteLine("inf", "No files found in folder");
+                else
+                {
+                    WriteLine("inf", "Downloading...");
+                    DownloadFile(files[idx], DownloadLoop);
+                }
+            }
 
             Console.ReadLine();
         }

@@ -17,11 +17,10 @@ namespace MediaFireDownloader
 
         public FolderEntry(string key) : base(key, null)
         {
-            SetInfo();
             IsRoot = true;
         }
 
-        private void SetInfo()
+        public void SetInfoFromServer()
         {
             var options = RequestOptions.POST;
             options.Url = "https://www.mediafire.com/api/1.4/folder/get_info.php";

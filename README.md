@@ -17,14 +17,14 @@ MediaFireDownloader <folder key> [destination path]
 ```
                                   folder key
                                  ⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄⌄
-https://www.mediafire.com/folder/r6v733dba1h82/NewFolder
+https://www.mediafire.com/folder/rww7bhhi0yc1l/NewFolder
 ```
-The folder with key `r6v733dba1h82` and all files will be downloaded to the C:/Downloads
+The folder with key `rww7bhhi0yc1l` and all files will be downloaded to the C:/Downloads
 ```
-MediaFireDownloader r6v733dba1h82 C:/Downloads
+MediaFireDownloader rww7bhhi0yc1l C:/Downloads
 ```
 or to the current folder if destination path is not specified
 ```
-MediaFireDownloader r6v733dba1h82
+MediaFireDownloader rww7bhhi0yc1l
 ```
 <!--DontShowOnWebsite #end-->
