@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Net;
-using PinkJson;
+using PinkJson2;
 
 namespace MediaFireDownloader.WebRequests
 {
@@ -23,9 +23,9 @@ namespace MediaFireDownloader.WebRequests
             Headers = headers;
         }
 
-        public Json GetJson()
+        public IJson GetJson()
         {
-            return new Json(Content);
+            return Json.Parse(Content);
         }
     }
 }

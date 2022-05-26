@@ -22,7 +22,7 @@ namespace MediaFireDownloader
             var options = RequestOptions.GET;
             options.Url = "https://www.mediafire.com/file/" + Key;
             var response = web.SendRequest(options);
-            var match = Regex.Match(response.Content, "\"https://download.*\"");
+            var match = Regex.Match(response.Content, "\"https://download.*?\"");
             return match.Value.Substring(1, match.Value.Length - 2);
         }
     }

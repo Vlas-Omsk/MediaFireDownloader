@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using MediaFireDownloader.WebRequests;
-using PinkJson;
+using PinkJson2;
 
 namespace MediaFireDownloader
 {
@@ -57,7 +57,7 @@ namespace MediaFireDownloader
                 var response = web.SendRequest(options);
                 var responseJson = response.GetJson();
 
-                foreach (JsonArrayObject file in responseJson["response"]["folder_content"]["files"].Get<JsonArray>())
+                foreach (JsonArrayValue file in responseJson["response"]["folder_content"]["files"].Get<JsonArray>())
                 {
                     var entry = new FileEntry(
                         file["quickkey"].Get<string>(),
@@ -98,7 +98,7 @@ namespace MediaFireDownloader
                 var response = web.SendRequest(options);
                 var responseJson = response.GetJson();
 
-                foreach (JsonArrayObject file in responseJson["response"]["folder_content"]["folders"].Get<JsonArray>())
+                foreach (JsonArrayValue file in responseJson["response"]["folder_content"]["folders"].Get<JsonArray>())
                 {
                     var entry = new FolderEntry(
                         file["folderkey"].Get<string>(),

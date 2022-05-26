@@ -1,7 +1,8 @@
 {
   "profiles": {
     "MediaFireDownloader": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "rww7bhhi0yc1l"
     }
   }
 }
