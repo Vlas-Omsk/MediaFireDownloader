@@ -59,8 +59,6 @@ namespace MediaFireDownloader
 
         private void Start(string folderKey, string destination)
         {
-            _logger.Info("Press Enter to exit while the program is running");
-
             FolderEntry rootFolder;
             try
             {
