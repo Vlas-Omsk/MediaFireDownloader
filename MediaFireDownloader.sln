@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaFireDownloader", "Medi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PinkJson2", "..\PinkJson\PinkJson2\PinkJson2\PinkJson2.csproj", "{D1215C6D-D35E-457D-A169-5AF626C214CA}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebLib", "..\WebLib\WebLib.csproj", "{B9FEF652-C3A7-4213-B6D7-D05726C80CFF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{D1215C6D-D35E-457D-A169-5AF626C214CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1215C6D-D35E-457D-A169-5AF626C214CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1215C6D-D35E-457D-A169-5AF626C214CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9FEF652-C3A7-4213-B6D7-D05726C80CFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9FEF652-C3A7-4213-B6D7-D05726C80CFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9FEF652-C3A7-4213-B6D7-D05726C80CFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9FEF652-C3A7-4213-B6D7-D05726C80CFF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

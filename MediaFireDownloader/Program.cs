@@ -1,182 +1,194 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
+﻿using MediaFireDownloader.Models;
+using System;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
+using WebLib;
 
 namespace MediaFireDownloader
 {
-    class Program
+    public sealed class Program
     {
-        static int idx = 0, errors = 0, downloaded = 0, skipped = 0;
-        static List<FileEntry> files;
-        static SHA256 SHA256 = SHA256.Create();
+        private readonly ConsoleLogger _logger = new ConsoleLogger();
+        private int _skipped;
+        private int _failed;
+        private int _downloaded;
+        private Task[] _tasks;
 
         static void Main(string[] args)
         {
-            FolderEntry root;
+            string folderKey;
+            string destination;
+            int threadsCount;
 
             switch (args.Length)
             {
                 default:
-                    Console.WriteLine("Use MediaFireDownloader <folder key> [destination path]".Normalize());
-                    Console.ReadLine();
+                    Console.WriteLine("Use MediaFireDownloader <folder key> [destination path] [threads count]");
                     return;
                 case 1:
-                    root = new FolderEntry(args[0]);
+                    folderKey = args[0];
+                    destination = ".";
+                    threadsCount = 20;
                     break;
                 case 2:
-                    root = new FolderEntry(args[0]);
-                    root.Destination = Path.GetFullPath(args[1]);
+                    folderKey = args[0];
+                    destination = args[1];
+                    threadsCount = 20;
+                    break;
+                case 3:
+                    folderKey = args[0];
+                    destination = args[1];
+                    if (!int.TryParse(args[2], out threadsCount) || threadsCount <= 0)
+                    {
+                        Console.WriteLine("The number of threads must be a positive number greater than zero");
+                        return;
+                    }
                     break;
             }
 
-            WriteLine("inf", "Press Enter to exit while the program is running");
-
-            bool haveErrors = false;
-            try
-            {
-                root.SetInfoFromServer();
-            }
-            catch (WebException ex)
-            {
-                var httpWebResponse = (HttpWebResponse)ex.Response;
-                if (httpWebResponse.StatusCode == HttpStatusCode.NotFound)
-                    WriteLine("inf", "Folder not found");
-                else
-                    WriteLine("inf", $"Unknown error(Status code: {(int)httpWebResponse.StatusCode} {httpWebResponse.StatusCode}): " + ex.ToString());
-                haveErrors = true;
-            }
-
-            if (!haveErrors)
-            {
-                WriteLine("inf", "File info:");
-                Console.WriteLine("  Name: " + root.Name);
-                Console.WriteLine("  Destination: " + root.Destination);
-                WriteLine("inf", "Indexing...");
-                files = new List<FileEntry>();
-                GetFiles(root, in files);
-
-                if (files.Count == 0)
-                    WriteLine("inf", "No files found in folder");
-                else
-                {
-                    WriteLine("inf", "Downloading...");
-                    DownloadFile(files[idx], DownloadLoop);
-                }
-            }
-
-            Console.ReadLine();
+            var program = new Program(threadsCount);
+            program.Start(folderKey, destination);
         }
 
-        public static void DownloadLoop()
+        private Program(int threadsCount)
         {
-            if (++idx >= files.Count)
+            _tasks = new Task[threadsCount];
+        }
+
+        private void Start(string folderKey, string destination)
+        {
+            _logger.Info("Press Enter to exit while the program is running");
+
+            FolderEntry rootFolder;
+            try
             {
-                WriteLine("inf", "Done");
-                Console.WriteLine("  Downloaded files: " + downloaded);
-                Console.WriteLine("  Skipped files: " + skipped);
-                Console.WriteLine("  Errors: " + errors);
+                rootFolder = Mediafire.GetFolder(folderKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.Exception("FolderKey: " + folderKey, ex);
                 return;
             }
-            DownloadFile(files[idx], DownloadLoop);
+
+            _logger.Info("Folder info:");
+            _logger.Padding("Name: " + rootFolder.Name);
+            _logger.Padding("Destination: " + destination);
+
+            DownloadFolder(rootFolder, destination);
+
+            Task.WaitAll(_tasks.Where(x => x != null).ToArray());
+
+            _logger.Info("Done");
+            _logger.Padding("Downloaded: " + _downloaded);
+            _logger.Padding("Skipped: " + _skipped);
+            _logger.Padding("Failed: " + _failed);
         }
 
-        public static void GetFiles(FolderEntry entry, in List<FileEntry> collection)
+        private void DownloadFolder(FolderEntry folder, string destination)
         {
-            foreach (var file in entry.GetFiles())
+            destination = Path.Combine(destination, folder.Name);
+
+            Directory.CreateDirectory(destination);
+
+            try
             {
-                WriteLine("add", file.Destination + "/" + file.Name);
-                collection.Add(file);
-            }
+                var files = Mediafire.GetFiles(folder);
 
-            foreach (var folder in entry.GetFolders())
-            {
-                GetFiles(folder, collection);
-            }
-        }
-
-        public static void DownloadFile(FileEntry entry, Action onCompleated)
-        {
-            var wc = new WebClient();
-            if (!Directory.Exists(entry.Destination))
-                Directory.CreateDirectory(entry.Destination);
-            var fileName = entry.Destination + "/" + entry.Name;
-
-            if (File.Exists(fileName))
-            {
-                string fileHash;
-                using (var stream = File.OpenRead(fileName))
-                    fileHash = string.Join("", SHA256.ComputeHash(stream).Select(b => b.ToString("x2")));
-
-                if (entry.Hash == fileHash)
+                for (var i = 0; i < files.Length; i++)
                 {
-                    skipped++;
-                    WriteLine("skp", fileName);
-                    if (onCompleated != null)
-                        onCompleated();
-                    return;
+                    var freeTaskIndex = Array.FindIndex(_tasks, x => x?.IsCompleted ?? true);
+
+                    _tasks[freeTaskIndex] = DownloadFile(files[i], destination);
+
+                    if (_tasks.All(x => x != null))
+                        Task.WaitAny(_tasks);
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.Exception("Folder: " + destination, ex);
             }
 
             try
             {
-                var downloadLink = entry.GetDownloadLink();
+                var folders = Mediafire.GetFolders(folder);
 
-                WriteLine("dwnload", fileName);
-                Console.WriteLine("  Source: " + downloadLink);
-
-                var cursorTop = Console.CursorTop;
-                var isConsoleLocked = false;
-
-                void DownloadProgressChangedHandler(int ProgressPercentage, ulong BytesReceived)
-                {
-                    if (isConsoleLocked)
-                        return;
-                    isConsoleLocked = true;
-                    var loadedWidth = (int)Math.Round(ProgressPercentage / 10d);
-                    Console.SetCursorPosition(0, cursorTop);
-                    var str = $"[{new string('#', loadedWidth)}{new string(' ', 10 - loadedWidth)}] {ProgressPercentage}% ({BytesReceived} B / {entry.Size} B)";
-                    Console.Write(str);
-                    isConsoleLocked = false;
-                };
-
-                DownloadProgressChangedHandler(0, 0);
-                wc.DownloadProgressChanged += (s, e) => DownloadProgressChangedHandler(e.ProgressPercentage, (ulong)e.BytesReceived);
-                wc.DownloadFileCompleted += (s, e) =>
-                {
-                    if (!e.Cancelled)
-                    {
-                        DownloadProgressChangedHandler(100, entry.Size);
-                        downloaded++;
-                    }
-                    else
-                    {
-                        Console.Write(" Error!");
-                        errors++;
-                    }
-
-                    Console.WriteLine();
-                    wc.Dispose();
-                    if (onCompleated != null)
-                        onCompleated();
-                };
-                wc.DownloadFileAsync(new Uri(downloadLink), fileName);
-            } catch
+                foreach (var folderToDownload in folders)
+                    DownloadFolder(folderToDownload, destination);
+            }
+            catch (Exception ex)
             {
-                WriteLine("error", fileName);
-                errors++;
-                if (onCompleated != null)
-                    onCompleated();
+                _logger.Exception("Folder: " + destination, ex);
             }
         }
 
-        public static void WriteLine(string prefix, string content)
+        private async Task DownloadFile(FileEntry file, string destination)
         {
-            if (prefix.Length > 3)
-                prefix = prefix.Substring(0, 3);
-            Console.WriteLine($"[{prefix.ToUpper()}] {content}");
+            await Task.Run(() =>
+            {
+                destination = Path.Combine(destination, file.Name);
+
+                if (File.Exists(destination))
+                {
+                    string fileHash;
+                    using (var stream = File.OpenRead(destination))
+                    using (var sha256 = SHA256.Create())
+                        fileHash = string.Concat(sha256.ComputeHash(stream).Select(b => b.ToString("x2")));
+
+                    if (file.Hash == fileHash)
+                    {
+                        _skipped++;
+                        _logger.Skipped(destination);
+                        return;
+                    }
+                }
+
+                string downloadLink;
+                try
+                {
+                    downloadLink = Mediafire.GetDownloadLink(file);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Exception("File: " + destination, ex);
+                    return;
+                }
+
+                _logger.Download(destination);
+                _logger.Padding("Source: " + downloadLink);
+
+                var request = HttpRequest.GET;
+                request.Url = downloadLink;
+
+                using (var response = request.GetResponse())
+                {
+                    if (response.HaveErrors)
+                    {
+                        _logger.Error(downloadLink + " " + response.WebException.Status);
+                        _failed++;
+                        return;
+                    }
+
+                    using (var stream = response.GetStream())
+                    using (var fileStream = File.Open(destination, FileMode.Create))
+                    {
+                        var position = 0L;
+                        var buffer = new byte[8 * 1024];
+                        int bytesRead;
+
+                        while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
+                        {
+                            fileStream.Write(buffer, 0, bytesRead);
+                            position += bytesRead;
+                        }
+                    }
+                }
+
+                _logger.End(destination);
+                _downloaded++;
+            });
         }
     }
 }
