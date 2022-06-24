@@ -21,6 +21,8 @@ namespace MediaFireDownloader
             using (var response = request.GetResponse())
             {
                 var match = Regex.Match(response.GetText(), "\"http://download.*?\"");
+                if (!match.Success)
+                    throw new Exception("The file is blocked or not available");
                 return match.Value.Substring(1, match.Value.Length - 2);
             }
         }

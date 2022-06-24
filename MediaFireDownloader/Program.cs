@@ -14,7 +14,7 @@ namespace MediaFireDownloader
         private int _skipped;
         private int _failed;
         private int _downloaded;
-        private Task[] _tasks;
+        private readonly Task[] _tasks;
 
         static void Main(string[] args)
         {
@@ -107,6 +107,7 @@ namespace MediaFireDownloader
             catch (Exception ex)
             {
                 _logger.Exception("Folder: " + destination, ex);
+                _failed++;
             }
 
             try
@@ -119,6 +120,7 @@ namespace MediaFireDownloader
             catch (Exception ex)
             {
                 _logger.Exception("Folder: " + destination, ex);
+                _failed++;
             }
         }
 
@@ -151,6 +153,7 @@ namespace MediaFireDownloader
                 catch (Exception ex)
                 {
                     _logger.Exception("File: " + destination, ex);
+                    _failed++;
                     return;
                 }
 
