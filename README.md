@@ -9,7 +9,7 @@ MediaFireDownloader is a simple console client for downloading a folder and all 
 
 #### Command line arguments
 ```
-MediaFireDownloader <folder key> [destination path]
+MediaFireDownloader <folder key> [destination path] [threads count]
 ```
 
 <!--DontShowOnWebsite #begin-->
