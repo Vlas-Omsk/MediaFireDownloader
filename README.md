@@ -34,7 +34,7 @@ or to the current folder if destination path is not specified
 MediaFireDownloader rww7bhhi0yc1l
 ```
 
-##### If 'The file is blocked or not available'
+#### If 'The file is blocked or not available'
 
 If the file is locked, inaccessible due to copyright, or for other reasons, you can
 1) Copy the folder to your mediafire, after which the download from your copy of folder will become available
