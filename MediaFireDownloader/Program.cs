@@ -1,195 +1,95 @@
-﻿using MediaFireDownloader.Models;
-using System;
-using System.IO;
+﻿using System;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Threading.Tasks;
-using WebLib;
+using System.Net;
+using MediaFireDownloader.Net;
+using ProcessArguments;
 
 namespace MediaFireDownloader
 {
-    public sealed class Program
+    internal sealed class Program
     {
-        private readonly ConsoleLogger _logger = new ConsoleLogger();
-        private int _skipped;
-        private int _failed;
-        private int _downloaded;
-        private readonly Task[] _tasks;
-
         static void Main(string[] args)
         {
             string folderKey;
             string destination;
-            int threadsCount;
+            var logger = new ConsoleLogger();
+            var argsLength = Array.FindIndex(args, x => x.StartsWith("--"));
 
-            switch (args.Length)
+            if (argsLength == -1)
+                argsLength = args.Length;
+
+            switch (argsLength)
             {
                 default:
-                    Console.WriteLine("Use MediaFireDownloader <folder key> [destination path] [threads count]");
+                    logger.Error("Use MediaFireDownloader <folder key> [destination path]");
                     return;
                 case 1:
                     folderKey = args[0];
                     destination = ".";
-                    threadsCount = 20;
                     break;
                 case 2:
                     folderKey = args[0];
                     destination = args[1];
-                    threadsCount = 20;
-                    break;
-                case 3:
-                    folderKey = args[0];
-                    destination = args[1];
-                    if (!int.TryParse(args[2], out threadsCount) || threadsCount <= 0)
-                    {
-                        Console.WriteLine("The number of threads must be a positive number greater than zero");
-                        return;
-                    }
                     break;
             }
 
-            var program = new Program(threadsCount);
-            program.Start(folderKey, destination);
-        }
-
-        private Program(int threadsCount)
-        {
-            _tasks = new Task[threadsCount];
-        }
-
-        private void Start(string folderKey, string destination)
-        {
-            FolderEntry rootFolder;
-            try
-            {
-                rootFolder = Mediafire.GetFolder(folderKey);
-            }
-            catch (Exception ex)
-            {
-                _logger.Exception("FolderKey: " + folderKey, ex);
-                return;
-            }
-
-            _logger.Info("Folder info:");
-            _logger.Padding("Name: " + rootFolder.Name);
-            _logger.Padding("Destination: " + destination);
-
-            DownloadFolder(rootFolder, destination);
-
-            Task.WaitAll(_tasks.Where(x => x != null).ToArray());
-
-            _logger.Info("Done");
-            _logger.Padding("Downloaded: " + _downloaded);
-            _logger.Padding("Skipped: " + _skipped);
-            _logger.Padding("Failed: " + _failed);
-        }
-
-        private void DownloadFolder(FolderEntry folder, string destination)
-        {
-            destination = Path.Combine(destination, folder.Name);
-
-            Directory.CreateDirectory(destination);
+            Config config;
 
             try
             {
-                var files = Mediafire.GetFiles(folder);
-
-                for (var i = 0; i < files.Length; i++)
-                {
-                    var freeTaskIndex = Array.FindIndex(_tasks, x => x?.IsCompleted ?? true);
-
-                    _tasks[freeTaskIndex] = DownloadFile(files[i], destination);
-
-                    if (_tasks.All(x => x != null))
-                        Task.WaitAny(_tasks);
-                }
+                config = ArgumentsDeserializer.Deserialize<Config>(args.Skip(argsLength));
             }
-            catch (Exception ex)
+            catch (AggregateException ex)
             {
-                _logger.Exception("Folder: " + destination, ex);
-                _failed++;
-            }
-
-            try
-            {
-                var folders = Mediafire.GetFolders(folder);
-
-                foreach (var folderToDownload in folders)
-                    DownloadFolder(folderToDownload, destination);
-            }
-            catch (Exception ex)
-            {
-                _logger.Exception("Folder: " + destination, ex);
-                _failed++;
-            }
-        }
-
-        private async Task DownloadFile(FileEntry file, string destination)
-        {
-            await Task.Run(() =>
-            {
-                destination = Path.Combine(destination, file.Name);
-
-                if (File.Exists(destination))
+                if (ex.InnerException is InvalidProcessArgumentException)
                 {
-                    string fileHash;
-                    using (var stream = File.OpenRead(destination))
-                    using (var sha256 = SHA256.Create())
-                        fileHash = string.Concat(sha256.ComputeHash(stream).Select(b => b.ToString("x2")));
-
-                    if (file.Hash == fileHash)
-                    {
-                        _skipped++;
-                        _logger.Skipped(destination);
-                        return;
-                    }
-                }
-
-                string downloadLink;
-                try
-                {
-                    downloadLink = Mediafire.GetDownloadLink(file);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Exception("File: " + destination, ex);
-                    _failed++;
+                    foreach (var innerEx in ex.InnerExceptions)
+                        logger.Error(innerEx.Message);
                     return;
                 }
 
-                _logger.Download(destination);
-                _logger.Padding("Source: " + downloadLink);
+                throw;
+            }
 
-                var request = HttpRequest.GET;
-                request.Url = downloadLink;
+            var httpClientBuilder = new HttpClientBuilder()
+            {
+                UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:106.0) Gecko/20100101 Firefox/106.0"
+            };
+            if (!string.IsNullOrEmpty(config.Cookies))
+            {
+                httpClientBuilder.CookieContainer = ParseCookies(config.Cookies, !config.DontUseSsl);
 
-                using (var response = request.GetResponse())
+                var cookies = httpClientBuilder.CookieContainer.GetCookies(new Uri("https://mediafire.com"));
+
+                if (cookies["ukey"] == null || cookies["user"] == null)
                 {
-                    if (response.HaveErrors)
-                    {
-                        _logger.Error(downloadLink + " " + response.WebException.Status);
-                        _failed++;
-                        return;
-                    }
-
-                    using (var stream = response.GetStream())
-                    using (var fileStream = File.Open(destination, FileMode.Create))
-                    {
-                        var position = 0L;
-                        var buffer = new byte[8 * 1024];
-                        int bytesRead;
-
-                        while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
-                        {
-                            fileStream.Write(buffer, 0, bytesRead);
-                            position += bytesRead;
-                        }
-                    }
+                    logger.Error("The cookies line should contain a cookie named 'ukey' and 'user'");
+                    return;
                 }
+            }
 
-                _logger.End(destination);
-                _downloaded++;
-            });
+            var downloader = new Downloader(logger, config.ThreadsCount, httpClientBuilder.Create(), !config.DontUseSsl);
+            downloader.Start(folderKey, destination).GetAwaiter().GetResult();
+        }
+
+        private static CookieContainer ParseCookies(string str, bool secure)
+        {
+            var cookies = new CookieContainer();
+
+            foreach (var cookieStr in str.Split(';'))
+            {
+                var nameValue = cookieStr.Split('=');
+
+                cookies.Add(new Cookie()
+                {
+                    Name = nameValue[0].Trim(),
+                    Value = nameValue[1].Trim(),
+                    Domain = "mediafire.com",
+                    Secure = secure,
+                });
+            }
+
+            return cookies;
         }
     }
 }

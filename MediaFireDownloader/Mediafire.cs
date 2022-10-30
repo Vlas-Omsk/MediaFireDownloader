@@ -1,151 +1,203 @@
 ﻿using MediaFireDownloader.Models;
+using MediaFireDownloader.Net;
 using PinkJson2;
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Text;
-using System.Text.RegularExpressions;
-using WebLib;
+using System.Threading.Tasks;
 
 namespace MediaFireDownloader
 {
-    public static class Mediafire
+    internal sealed class Mediafire
     {
-        private const string _apiEndPoint = "http://www.mediafire.com/api/1.4/";
+        private static readonly Uri _sslApiEndPoint = new Uri("https://www.mediafire.com/api/1.4/");
+        private static readonly Uri _sslFileEndPoint = new Uri("https://www.mediafire.com/file/");
+        private static readonly Uri _nonSslApiEndPoint = new Uri("http://www.mediafire.com/api/1.4/");
+        private static readonly Uri _nonSslFileEndPoint = new Uri("http://www.mediafire.com/file/");
+        private static readonly char[] _downloadSymbols = "://download".ToCharArray();
+        private static readonly int _skipLength = "mediafire.com/".Length;
+        private readonly Uri _apiEndPoint;
+        private readonly Uri _fileEndPoint;
+        private readonly bool _useSsl;
+        private readonly HttpClient _httpClient;
 
-        public static string GetDownloadLink(FileEntry file)
+        private enum RequestType
         {
-            var request = HttpRequest.GET;
-            request.Url = "http://www.mediafire.com/file/" + file.Key;
+            Get,
+            Post
+        }
 
-            using (var response = request.GetResponse())
+        public Mediafire(HttpClient httpClient, bool useSsl)
+        {
+            _httpClient = httpClient;
+            if (_useSsl = useSsl)
             {
-                var match = Regex.Match(response.GetText(), "\"http://download.*?\"");
-                if (!match.Success)
-                    throw new Exception("The file is blocked or not available");
-                return match.Value.Substring(1, match.Value.Length - 2);
+                _apiEndPoint = _sslApiEndPoint;
+                _fileEndPoint = _sslFileEndPoint;
+            }
+            else
+            {
+                _apiEndPoint = _nonSslApiEndPoint;
+                _fileEndPoint = _nonSslFileEndPoint;
             }
         }
 
-        public static FolderEntry[] GetFolders(FolderEntry folder)
+        public async Task GetDownloadLink(FileEntry file, StringBuilder link)
         {
-            var entries = new List<FolderEntry>();
-            var moveNext = true;
-            var chunk = 1;
-
-            while (moveNext)
+            using var request = new HttpRequestMessage()
             {
-                var request = HttpRequest.GET;
-                request.Url = _apiEndPoint;
-                request.SetPath("/folder/get_content.php");
-                request.SetQueryParam("content_type", "folders");
-                request.SetQueryParam("filter", "all");
-                request.SetQueryParam("order_by", "name");
-                request.SetQueryParam("order_direction", "asc");
-                request.SetQueryParam("chunk", chunk);
-                request.SetQueryParam("chunk_size", 1000);
-                request.SetQueryParam("version", "1.5");
-                request.SetQueryParam("folder_key", folder.Key);
-                request.SetQueryParam("response_format", "json");
+                Method = HttpMethod.Get,
+                RequestUri = new Uri(_fileEndPoint, file.Key),
+                Version = HttpVersion.Version20
+            };
 
-                IJson json;
-                using (var response = request.GetResponse())
-                using (var streamReader = new StreamReader(response.GetStream()))
-                    json = Json.Parse(streamReader);
+            using var response = await _httpClient.SendAsync(request);
+            using var responseStream = await response.Content.ReadAsStreamAsync();
 
-                TryUnwrapError(json);
+            int chInt;
+            int dwi = 0;
+            var compleated = false;
+            var hasId = false;
 
-                foreach (var file in json["response"]["folder_content"]["folders"].Get<JsonArray>())
+            if (_useSsl)
+                link.Append("https://download");
+            else
+                link.Append("http://download");
+
+            while ((chInt = responseStream.ReadByte()) != -1)
+            {
+                if (dwi == _downloadSymbols.Length)
                 {
-                    entries.Add(new FolderEntry(
-                        file["folderkey"].Get<string>(),
-                        file["name"].Get<string>()
-                    ));
+                    if (chInt >= '0' && chInt <= '9')
+                    {
+                        hasId = true;
+                        link.Append((char)chInt);
+                    }
+                    else if (hasId && chInt == '.')
+                    {
+                        responseStream.Seek(_skipLength, SeekOrigin.Current);
+                        link.Append(".mediafire.com/");
+
+                        for (var i = 0; i < 12; i++)
+                            link.Append((char)responseStream.ReadByte());
+
+                        compleated = true;
+                        break;
+                    }
+                    else
+                    {
+                        dwi = 0;
+                    }
                 }
-
-                chunk++;
-                moveNext = json["response"]["folder_content"]["more_chunks"].Get<string>() == "yes";
-            }
-
-            return entries.ToArray();
-        }
-
-        public static FileEntry[] GetFiles(FolderEntry folder)
-        {
-            List<FileEntry> entries = new List<FileEntry>();
-            bool moveNext = true;
-            int chunk = 1;
-
-            while (moveNext)
-            {
-                var request = HttpRequest.GET;
-                request.Url = _apiEndPoint;
-                request.SetPath("/folder/get_content.php");
-                request.SetQueryParam("content_type", "files");
-                request.SetQueryParam("filter", "all");
-                request.SetQueryParam("order_by", "name");
-                request.SetQueryParam("order_direction", "asc");
-                request.SetQueryParam("chunk", chunk);
-                request.SetQueryParam("chunk_size", 1000);
-                request.SetQueryParam("version", "1.5");
-                request.SetQueryParam("folder_key", folder.Key);
-                request.SetQueryParam("response_format", "json");
-
-                IJson json;
-                using (var response = request.GetResponse())
-                using (var streamReader = new StreamReader(response.GetStream()))
-                    json = Json.Parse(streamReader);
-
-                TryUnwrapError(json);
-
-                foreach (var file in json["response"]["folder_content"]["files"].Get<JsonArray>())
+                else if (chInt == _downloadSymbols[dwi])
                 {
-                    entries.Add(new FileEntry(
-                        file["quickkey"].Get<string>(),
-                        file["hash"].Get<string>(),
-                        file["filename"].Get<string>(),
-                        file["size"].Get<ulong>()
-                    ));
+                    dwi++;
                 }
-
-                chunk++;
-                moveNext = json["response"]["folder_content"]["more_chunks"].Get<string>() == "yes";
+                else
+                {
+                    dwi = 0;
+                }
             }
 
-            return entries.ToArray();
+            link.Append('/');
+            link.Append(file.Key);
+
+            if (!compleated)
+                throw new Exception("The file is blocked or not available");
         }
 
-        public static FolderEntry GetFolder(string folderKey)
+        public async Task<ChunkedResult<FolderEntry>> GetFolders(FolderEntry folder, int chunk, int chunkSize)
         {
-            var request = HttpRequest.POST;
-            request.Url = _apiEndPoint;
-            request.SetPath("/folder/get_info.php");
-            var data = new Dictionary<string, string>();
-            data.Add("recursive", "yes");
-            data.Add("folder_key", folderKey);
-            data.Add("response_format", "json");
-            request.SetData(data, Encoding.UTF8);
-            request.SetHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
+            var responseJson = await GetContent(folder, "folders", chunk, chunkSize);
 
-            using (var response = request.GetResponse())
-            using (var streamReader = new StreamReader(response.GetStream()))
+            return new ChunkedResult<FolderEntry>(
+                responseJson["folder_content"]["folders"].Deserialize<FolderEntry[]>(),
+                responseJson["folder_content"]["more_chunks"].Get<string>() == "yes"
+            );
+        }
+
+        public async Task<ChunkedResult<FileEntry>> GetFiles(FolderEntry folder, int chunk, int chunkSize)
+        {
+            var responseJson = await GetContent(folder, "files", chunk, chunkSize);
+
+            return new ChunkedResult<FileEntry>(
+                responseJson["folder_content"]["files"].Deserialize<FileEntry[]>(),
+                responseJson["folder_content"]["more_chunks"].Get<string>() == "yes"
+            );
+        }
+
+        private async Task<IJson> GetContent(FolderEntry folder, string contentType, int chunk, int chunkSize)
+        {
+            var responseJson = await GetResponse(
+                RequestType.Get,
+                "folder/get_content.php",
+                new FormData()
+                {
+                    { "content_type", contentType },
+                    { "filter", "all" },
+                    { "order_by", "name" },
+                    { "order_direction", "asc" },
+                    { "chunk", chunk.ToString() },
+                    { "chunk_size", chunkSize.ToString() },
+                    { "version", "1.5" },
+                    { "folder_key", folder.Key }
+                }
+            );
+
+            return responseJson;
+        }
+
+        public async Task<FolderEntry> GetInfo(string folderKey)
+        {
+            var responseJson = await GetResponse(
+                RequestType.Post,
+                "folder/get_info.php",
+                new FormData()
+                {
+                    { "recursive", "yes" },
+                    { "folder_key", folderKey }
+                }
+            );
+
+            return new FolderEntry()
             {
-                var json = Json.Parse(streamReader);
-                TryUnwrapError(json);
-
-                return new FolderEntry(
-                    folderKey,
-                    json["response"]["folder_info"]["name"].Get<string>()
-                );
-            }
+                Key = folderKey,
+                Name = responseJson["folder_info"]["name"].Get<string>()
+            };
         }
 
-        private static void TryUnwrapError(IJson json)
+        private async Task<IJson> GetResponse(RequestType type, string path, FormData data)
         {
-            var response = json["response"];
+            data["response_format"] = "json";
 
-            if (response["result"].Get<string>().Equals("error", StringComparison.OrdinalIgnoreCase))
-                throw new MediafireException(response["error"].Get<int>(), response["message"].Get<string>());
+            using var request = new HttpRequestMessage()
+            {
+                Version = HttpVersion.Version20
+            };
+
+            switch (type)
+            {
+                case RequestType.Get:
+                    request.Method = HttpMethod.Get;
+                    request.RequestUri = new Uri(_apiEndPoint, path + '?' + data);
+                    break;
+                case RequestType.Post:
+                    request.Method = HttpMethod.Post;
+                    request.RequestUri = new Uri(_apiEndPoint, path);
+                    request.Content = new FormDataContent(data);
+                    break;
+            }
+
+            using var response = await _httpClient.SendAsync(request);
+            var responseData = await response.Content.ReadAsJsonAsync();
+            var responseJson = responseData["response"];
+
+            if (responseJson["result"].Get<string>().Equals("error", StringComparison.OrdinalIgnoreCase))
+                throw new MediafireException(responseJson["error"].Get<int>(), responseJson["message"].Get<string>());
+
+            return responseJson;
         }
     }
 }

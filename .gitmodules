@@ -1,6 +1,6 @@
 [submodule "PinkJson"]
 	path = PinkJson
 	url = https://github.com/Vlas-Omsk/PinkJson
-[submodule "WebLib"]
-	path = WebLib
-	url = https://github.com/Vlas-Omsk/WebLib
+[submodule "ProcessArguments"]
+	path = ProcessArguments
+	url = https://github.com/Vlas-Omsk/ProcessArguments

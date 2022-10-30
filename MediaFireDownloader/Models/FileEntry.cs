@@ -1,16 +1,17 @@
-﻿using System;
+﻿using PinkJson2;
+using System;
 
 namespace MediaFireDownloader.Models
 {
-    public sealed class FileEntry : Entry
+    internal sealed class FileEntry : IEntry
     {
-        public string Hash { get; }
-        public ulong Size { get; }
-
-        public FileEntry(string key, string hash, string name, ulong size) : base(key, name)
-        {
-            Hash = hash;
-            Size = size;
-        }
+        [JsonProperty("quickkey")]
+        public string Key { get; set; }
+        [JsonProperty("filename")]
+        public string Name { get; set; }
+        [JsonProperty("hash")]
+        public string Hash { get; set; }
+        [JsonProperty("size")]
+        public ulong Size { get; set; }
     }
 }

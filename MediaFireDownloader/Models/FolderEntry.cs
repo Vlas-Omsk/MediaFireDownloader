@@ -1,11 +1,13 @@
-﻿using System;
+﻿using PinkJson2;
+using System;
 
 namespace MediaFireDownloader.Models
 {
-    public sealed class FolderEntry : Entry
+    internal sealed class FolderEntry : IEntry
     {
-        public FolderEntry(string key, string name) : base(key, name)
-        {
-        }
+        [JsonProperty("folderkey")]
+        public string Key { get; set; }
+        [JsonProperty("name")]
+        public string Name { get; set; }
     }
 }

@@ -9,8 +9,14 @@ MediaFireDownloader is a simple console client for downloading a folder and all 
 
 #### Command line arguments
 ```
-MediaFireDownloader <folder key> [destination path] [threads count]
+MediaFireDownloader <folder key> [destination path]
 ```
+
+Other optional parameters:
+
+`--threadsCount=20` - number of threads to use for download
+`--сookies` - cookie string with format `name=value; name=value`
+`--dontUseSsl` - disables the use of https
 
 <!--DontShowOnWebsite #begin-->
 #### Example
@@ -27,4 +33,16 @@ or to the current folder if destination path is not specified
 ```
 MediaFireDownloader rww7bhhi0yc1l
 ```
+
+##### If 'The file is blocked or not available'
+
+If the file is locked, inaccessible due to copyright, or for other reasons, you can
+1) Copy the folder to your mediafire, after which the download from your copy of folder will become available
+2) You also need to find cookies in the browser with the names ukey and user
+3) Then run the program with the following parameters
+
+```
+MediaFireDownloader <key of your copied folder> --cookies="ukey=insert your ukey cookie; user=insert your user cookie"
+```
+
 <!--DontShowOnWebsite #end-->

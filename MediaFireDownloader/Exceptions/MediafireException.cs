@@ -2,7 +2,7 @@
 
 namespace MediaFireDownloader
 {
-    public sealed class MediafireException : Exception
+    internal sealed class MediafireException : Exception
     {
         public int ErrorCode { get; }
 

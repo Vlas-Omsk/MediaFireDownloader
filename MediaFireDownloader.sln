@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MediaFireDownloader", "Medi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PinkJson2", "PinkJson\PinkJson2\PinkJson2.csproj", "{D5A8B209-5DA1-4EC3-91D5-DD7F894A5AD0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebLib", "WebLib\WebLib.csproj", "{2FD4BBF8-43DA-4C27-853F-835042FFD2D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProcessArguments", "ProcessArguments\ProcessArguments\ProcessArguments.csproj", "{37F2D2E6-802C-42A2-8171-9E3BF6658931}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{D5A8B209-5DA1-4EC3-91D5-DD7F894A5AD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D5A8B209-5DA1-4EC3-91D5-DD7F894A5AD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D5A8B209-5DA1-4EC3-91D5-DD7F894A5AD0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2FD4BBF8-43DA-4C27-853F-835042FFD2D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2FD4BBF8-43DA-4C27-853F-835042FFD2D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2FD4BBF8-43DA-4C27-853F-835042FFD2D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2FD4BBF8-43DA-4C27-853F-835042FFD2D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37F2D2E6-802C-42A2-8171-9E3BF6658931}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37F2D2E6-802C-42A2-8171-9E3BF6658931}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37F2D2E6-802C-42A2-8171-9E3BF6658931}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37F2D2E6-802C-42A2-8171-9E3BF6658931}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
