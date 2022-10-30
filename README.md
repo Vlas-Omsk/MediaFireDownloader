@@ -36,7 +36,7 @@ MediaFireDownloader rww7bhhi0yc1l
 
 #### If 'The file is blocked or not available'
 
-If the file is locked, inaccessible due to copyright, or for other reasons, you can
+If the file is blocked, inaccessible due to copyright, or for other reasons, you can
 1) Copy the folder to your mediafire, after which the download from your copy of folder will become available
 2) You also need to find cookies in the browser with the names ukey and user
 3) Then run the program with the following parameters
