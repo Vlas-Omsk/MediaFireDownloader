@@ -3,7 +3,7 @@ using System;
 
 namespace MediaFireDownloader.Models
 {
-    internal sealed class FileEntry : IEntry
+    internal sealed class FileEntry
     {
         [JsonProperty("quickkey")]
         public string Key { get; set; }

@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.WebRequestMethods;
 
 namespace MediaFireDownloader
 {
@@ -56,6 +57,12 @@ namespace MediaFireDownloader
             using var response = await _httpClient.SendAsync(request);
             using var responseStream = await response.Content.ReadAsStreamAsync();
 
+            if (!TryFindDownloadLinkInStream(file, responseStream, link))
+                throw new Exception("The file is blocked or not available");
+        }
+
+        private bool TryFindDownloadLinkInStream(FileEntry file, Stream stream, StringBuilder link)
+        {
             int chInt;
             int dwi = 0;
             var compleated = false;
@@ -66,7 +73,7 @@ namespace MediaFireDownloader
             else
                 link.Append("http://download");
 
-            while ((chInt = responseStream.ReadByte()) != -1)
+            while ((chInt = stream.ReadByte()) != -1)
             {
                 if (dwi == _downloadSymbols.Length)
                 {
@@ -77,11 +84,11 @@ namespace MediaFireDownloader
                     }
                     else if (hasId && chInt == '.')
                     {
-                        responseStream.Seek(_skipLength, SeekOrigin.Current);
+                        stream.Seek(_skipLength, SeekOrigin.Current);
                         link.Append(".mediafire.com/");
 
                         for (var i = 0; i < 12; i++)
-                            link.Append((char)responseStream.ReadByte());
+                            link.Append((char)stream.ReadByte());
 
                         compleated = true;
                         break;
@@ -104,8 +111,7 @@ namespace MediaFireDownloader
             link.Append('/');
             link.Append(file.Key);
 
-            if (!compleated)
-                throw new Exception("The file is blocked or not available");
+            return compleated;
         }
 
         public async Task<ChunkedResult<FolderEntry>> GetFolders(FolderEntry folder, int chunk, int chunkSize)

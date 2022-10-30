@@ -1,9 +1,8 @@
-﻿using MediaFireDownloader.Models;
-using System;
+﻿using System;
 
 namespace MediaFireDownloader
 {
-    internal sealed class EntryWrapper<T> where T : IEntry
+    internal sealed class EntryWrapper<T>
     {
         public EntryWrapper(string destination, T entry)
         {

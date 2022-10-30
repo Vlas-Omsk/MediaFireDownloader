@@ -23,7 +23,7 @@ namespace MediaFireDownloader
             _folders.Enqueue(new EntryWrapper<FolderEntry>(destination, folder));
         }
 
-        public async Task<EntryWrapper<FileEntry>> MoveToNextFile()
+        public async Task<EntryWrapper<FileEntry>> ReadNextFile()
         {
             if (_result == null && !await TryMoveToNextChunk())
                 return null;
@@ -55,7 +55,7 @@ namespace MediaFireDownloader
             return _result.Result.Length > 0;
         }
 
-        public async Task<EntryWrapper<FolderEntry>> MoveToNextFolder()
+        public async Task<EntryWrapper<FolderEntry>> ReadNextFolder()
         {
             var folder = _folders.Dequeue();
             var destination = Path.Combine(folder.Destination, folder.Entry.Name);

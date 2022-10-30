@@ -1,7 +1,6 @@
 ﻿using MediaFireDownloader.Models;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -80,7 +79,7 @@ namespace MediaFireDownloader
 
             try
             {
-                while ((file = await MoveToNextFile()) != null)
+                while ((file = await ReadNextFileOrFolder()) != null)
                 {
                     var freeTaskIndex = Array.FindIndex(_tasks, x => x?.IsCompleted ?? true);
 
@@ -101,20 +100,20 @@ namespace MediaFireDownloader
             }
         }
 
-        private async Task<EntryWrapper<FileEntry>> MoveToNextFile()
+        private async Task<EntryWrapper<FileEntry>> ReadNextFileOrFolder()
         {
-            var file = await _fileReader.MoveToNextFile();
+            var file = await _fileReader.ReadNextFile();
 
             while (file == null)
             {
-                var folder = await _fileReader.MoveToNextFolder();
+                var folder = await _fileReader.ReadNextFolder();
 
                 if (folder == null)
                     return null;
 
                 Directory.CreateDirectory(Path.Combine(folder.Destination, folder.Entry.Name));
 
-                file = await _fileReader.MoveToNextFile();
+                file = await _fileReader.ReadNextFile();
             }
 
             return file;
