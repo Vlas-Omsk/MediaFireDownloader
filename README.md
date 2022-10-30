@@ -14,9 +14,9 @@ MediaFireDownloader <folder key> [destination path]
 
 Other optional parameters:
 
-`--threadsCount=20` - number of threads to use for download
-`--сookies` - cookie string with format `name=value; name=value`
-`--dontUseSsl` - disables the use of https
+`--threadsCount=20` - number of threads to use for download<br>
+`--сookies` - cookie string with format `name=value; name=value`<br>
+`--dontUseSsl` - disables the use of https<br>
 
 <!--DontShowOnWebsite #begin-->
 #### Example
