@@ -33,17 +33,6 @@ namespace MediaFireDownloader
         {
             Error(message);
             Padding(ex.ToString());
-            //Padding("Type: " + ex.GetType().Name);
-            //message = ex.Message;
-            //while (true)
-            //{
-            //    ex = ex.InnerException;
-            //    if (ex == null)
-            //        break;
-
-            //    message += $" ({ex.Message})";
-            //}
-            //Padding("Message: " + message);
         }
 
         public void Padding(string message)
